@@ -741,7 +741,7 @@ async function startServer() {
   await initializeYAMCP();
 
   // Try to start server with error handling
-  const server = app.listen(PORT, "localhost", () => {
+  const server = app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
     console.log("🔒 API access restricted to web interface only");
   });
@@ -776,7 +776,38 @@ async function startServer() {
 }
 
 // Start the server
-startServer().catch((error) => {
+startServer().then(server => {
+  const connections = new Set();
+  server.on('connection', (connection) => {
+    connections.add(connection);
+    connection.on('close', () => {
+      connections.delete(connection);
+    });
+  });
+
+  const gracefulShutdown = (signal) => {
+    console.log(`\nReceived ${signal}, shutting down...`);
+    
+    server.close(() => {
+      console.log('Server closed.');
+      process.exit(0);
+    });
+
+    // Force close connections
+    for (const connection of connections) {
+        connection.destroy();
+    }
+    
+    // If it doesn't exit in 5 seconds, force it.
+    setTimeout(() => {
+        console.error('Could not close connections in time, forcefully shutting down');
+        process.exit(1);
+    }, 5000).unref();
+  };
+
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+}).catch((error) => {
   console.error("Failed to start server:", error);
   process.exit(1);
 });

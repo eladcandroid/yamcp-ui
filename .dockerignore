@@ -1,0 +1,16 @@
+# Ignore everything by default
+**/*
+
+# Whitelist essential files and directories
+!/components.json
+!/index.html
+!/package-lock.json
+!/package.json
+!/postcss.config.js
+!/scripts/
+!/server.mjs
+!/src/
+!/tailwind.config.js
+!/tsconfig.json
+!/tsconfig.node.json
+!/vite.config.ts
